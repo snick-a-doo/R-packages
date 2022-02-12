@@ -1,0 +1,6 @@
+*~
+*.R
+.Rbuildignore
+NAMESPACE
+man/
+
