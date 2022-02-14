@@ -30,7 +30,7 @@ read.match <- function(match) {
 #'
 #' @export
 read.set <- function(prefix) {
-    pattern <- paste(prefix, '(.*)', sep='')
+    pattern <- paste('^', prefix, '(.*)', sep='')
     files <- list.files(pattern=pattern)
     if (length(files) == 0)
         stop(paste(prefix, 'did not match any files.'))

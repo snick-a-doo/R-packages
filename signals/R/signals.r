@@ -69,3 +69,8 @@ norm.sd <- function(x) {
 index <- function(d) {
     1:nrow(d)
 }
+
+#' Return the distribution of point-to-point differences.
+steps <- function(x) {
+    sort(unique(abs(diff(x))))
+}
