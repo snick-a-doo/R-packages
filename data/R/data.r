@@ -15,46 +15,48 @@
 
 ## This file defines functions for handling data files and data sets.
 
-#' A helper function for read.set()
-read.match <- function(match) {
-    table <- read.table(match[1], header=T)
-    table$tag <- match[2]
-    table
-}
+library(tibble)
 
 #' Read multiple tables into a single data frame.
 #'
-#' @param prefix A string that starts the name of each file to be read.
-#' @return A data frame formed by stacking the frames from each file. A 'tag' column is
-#' added. For each set, the tag consists of the part of the name after the prefix.
+#' @param pattern A regular expression that matches file names. If the pattern has
+#'     parenthesized groups, the part of the file name that matches the 1st group is
+#'     placed in the 'tag' column for that file's entries. If there are no groups tags are
+#'     generated from sequential integers.
+#' @return A tibble formed by stacking the frames from each file and appending a 'tag'
+#'     column.
 #'
+#' @examples
+#' read.set('^ball-b-(\\d+)$')
 #' @export
-read.set <- function(prefix) {
-    pattern <- paste('^', prefix, '(.*)', sep='')
-    files <- list.files(pattern=pattern)
-    if (length(files) == 0)
-        stop(paste(prefix, 'did not match any files.'))
-    match <- regmatches(files, regexec(pattern, files))
-    print(sapply(match, function(x) x[2]))
-    # Read the first set, then bind the rest to it.
-    set <- read.match(match[[1]])
-    for (m in match[-1]) {
-        ## Ignore empty files.
-        table <- try(read.match(m))
-        if (class(table) == 'data.frame' && nrow(table) > 0)
-            set <- rbind(set, table)
-    }
-    set
+read.set <- function(pattern) {
+    match <- list.files(pattern = pattern) %>%
+        str_match(pattern)
+    ## The 'tag' column is taken from the 1st submatch. If there isn't one, generate tags
+    ## from consecutive integers.
+    tags <- if(ncol(match) > 1) match[,2] else 1:nrow(match)
+    ## Show the tags to indicate how many and which files have been read.
+    print(tags)
+    table <- mapply(function(f, tag) read.table(f) %>% mutate(tag = tag),
+                    match[,1], tags) %>%
+        apply(2, as_tibble) %>%
+        ## Remove empty tables. Type deduction fails so bind_rows would choke.
+        (function(ts) Filter(nrow, ts)) %>%
+        bind_rows
 }
 
 #' Convert ISO date and time strings to a POSIXct time object.
+#' Deprecated: Use lubridate::ymd_hms(paste(date.str, time.str)))
 #' @export
 when <- function(date.str, time.str, format='%Y-%m-%d %H:%M:%S') {
+    print('Deprecated: Use lubridate::ymd_hms(paste(date.str, time.str))')
     as.POSIXct(paste(date.str, time.str), format=format)
 }
 
 #' Convert UNIX time to a POSIXct time object.
+#' Deprecated: Use lubridate::datetime(time) and possibly with_tz()'
 #' @export
 utime <-function(time) {
+    print('Deprecated: Use lubridate::datetime(time) and possibly with_tz()')
     as.POSIXct(time, origin='1970-01-01')
 }
